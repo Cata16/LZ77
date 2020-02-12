@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<AnchorPane maxHeight="500.0" maxWidth="500.0" prefHeight="500.0" prefWidth="500.0" style="-fx-background-color: #acfaed;" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="main.java.userinterface.Controller">
+   <children>
+      <Pane layoutX="9.0" layoutY="91.0" prefHeight="380.0" prefWidth="522.0" style="-fx-background-color: #acfaed; -fx-border-width: 2px; -fx-border-color: black; -fx-border-radius: 4;">
+         <children>
+            <Button layoutX="81.0" layoutY="341.0" mnemonicParsing="false" onAction="#encode" prefHeight="25.0" prefWidth="100.0" text="Encode" />
+            <Button layoutX="14.0" layoutY="75.0" mnemonicParsing="false" onAction="#uploadInputFile" prefHeight="25.0" prefWidth="110.0" text="UploadInputFile" />
+            <Button layoutX="14.0" layoutY="143.0" mnemonicParsing="false" onAction="#uploadOutputFile" text="UploadOutputFile" />
+            <Label fx:id="inputFileLabel" layoutX="162.0" layoutY="79.0" text="Niciun fisier selectat" />
+            <Label fx:id="outputFileLabel" layoutX="162.0" layoutY="147.0" text="Niciun fisier selectat" />
+            <Label fx:id="stateLabel" layoutX="131.0" layoutY="234.0" prefHeight="46.0" prefWidth="244.0" />
+            <Label layoutX="183.0" layoutY="22.0" prefHeight="17.0" prefWidth="170.0" text="Encode File/Decode File" />
+            <Button layoutX="324.0" layoutY="341.0" mnemonicParsing="false" onAction="#decode" prefHeight="25.0" prefWidth="100.0" text="Decode" />
+         </children>
+      </Pane>
+      <Label layoutX="214.0" layoutY="34.0" text="LZ77 algorithm" />
+   </children>
+</AnchorPane>
