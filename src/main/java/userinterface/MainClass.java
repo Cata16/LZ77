@@ -1,12 +1,14 @@
-package main.java.userinterface;
+package userinterface;
 
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.layout.AnchorPane;
 import javafx.stage.Stage;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
+import java.net.URL;
 
 public class MainClass extends Application {
 
@@ -15,8 +17,9 @@ public class MainClass extends Application {
     }
 
     @Override
-    public void start(Stage primaryStage) throws IOException {
-        Parent root = FXMLLoader.load(getClass().getResource("lzGUI.fxml"));
+    public void start(@NotNull Stage primaryStage) throws IOException {
+        URL resource = MainClass.class.getResource("/fxml/lzGUI.fxml");
+        AnchorPane root = FXMLLoader.load(resource);
         primaryStage.setTitle("LZ77");
         primaryStage.setScene(new Scene(root, 537, 550));
         primaryStage.show();
