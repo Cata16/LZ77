@@ -18,10 +18,6 @@ public class Match {
         this.newChar = newChar;
     }
 
-    public byte getNewChar() {
-        return newChar;
-    }
-
     public int getOffset() {
         return offset;
     }
@@ -30,4 +26,16 @@ public class Match {
         return length;
     }
 
+    public byte getNewChar() {
+        return newChar;
+    }
+
+    @Override
+    public String toString() {
+        return "Match{" +
+                "offset=" + offset +
+                ", length=" + length +
+                ", newChar=" + newChar +
+                '}';
+    }
 }

@@ -11,7 +11,7 @@ import java.io.IOException;
 
 public class Controller {
 
-    Lz lz = new Lz();
+    final Lz lz = new Lz();
     Alert alert;
 
     @FXML
@@ -26,16 +26,16 @@ public class Controller {
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("TXT Files", "*.txt"));
         File inputFile = fileChooser.showOpenDialog(null);
         if (inputFile != null) {
-            inputFileLabel.setText(inputFile.getName());
+            inputFileLabel.setText(inputFile.getAbsolutePath());
         }
     }
 
     public void uploadOutputFile() {
         FileChooser fileChooser = new FileChooser();
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("TXT Files", "*.txt"));
-        File outputFile = fileChooser.showOpenDialog(null);
+        File outputFile = fileChooser.showSaveDialog(null);
         if (outputFile != null) {
-            outputFileLabel.setText(outputFile.getName());
+            outputFileLabel.setText(outputFile.getAbsolutePath());
         }
     }
 

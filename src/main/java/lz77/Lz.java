@@ -3,89 +3,16 @@ package lz77;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Objects;
+import java.util.List;
 
 public class Lz {
-    private ArrayList<Byte> lookAheadBuffer = new ArrayList<>();
-    private ArrayList<Byte> window = new ArrayList<>();
-    private ArrayList<Byte> decodeWindow = new ArrayList<>();
-    private int windowSize = 16000;
-    private int lookAheadSize = 16000;
+    private final List<Byte> lookAheadBuffer = new ArrayList<>();
+    private final List<Byte> window = new ArrayList<>();
+    private final List<Byte> decodeWindow = new ArrayList<>();
+    private final int windowSize = 16000;
+    private final int lookAheadSize = 16000;
 
     public Lz() {
-    }
-
-    public void decode(String inputFilename, String outputFilename) throws IOException {
-        FileInputStream reader = new FileInputStream(inputFilename);
-        FileOutputStream writer = new FileOutputStream(outputFilename);
-
-        fillLookAheadBuffer(reader);
-        while (!lookAheadBuffer.isEmpty()) {
-            int positionsToMove = 0;
-            if (lookAheadBuffer.get(positionsToMove).equals((byte) '(')) {
-                Match match = searchForMatch();
-                if (match == null) {
-                    writer.write('(');
-                    decodeWindow.add(decodeWindow.size(), (byte) '(');
-                    positionsToMove = 1;
-                } else {
-                    outputDecodedChars(writer, match, decodeWindow);
-                    positionsToMove = getNumberOfPositionsToMove(match);
-                }
-            } else {
-                writer.write(lookAheadBuffer.get(positionsToMove));
-                decodeWindow.add(decodeWindow.size(), lookAheadBuffer.get(positionsToMove));
-                positionsToMove = 1;
-            }
-
-            moveLookAheadBuffer(reader, positionsToMove);
-            moveWindow(decodeWindow);
-        }
-        writer.close();
-        reader.close();
-
-    }
-
-    private int getNumberOfPositionsToMove(Match match) {
-        int counter = 0;
-        if (match.getNewChar() == ')') {
-            for (int j = 0; j < lookAheadBuffer.size(); j++) {
-                if (lookAheadBuffer.get(j) == ')') {
-                    counter++;
-                }
-                if (counter == 2) {
-                    return j + 1;
-                }
-            }
-        } else {
-            return lookAheadBuffer.indexOf((byte) ')') + 1;
-        }
-        return -1;
-    }
-
-    // this will also be removed since there will always be only tokens in the encoded file
-    private Match searchForMatch() {
-        int position = 1;
-        String startIndex = "";
-        String length = "";
-        Match match;
-        while ((0 <= lookAheadBuffer.get(position) - '0') && ((lookAheadBuffer.get(position) - '0') <= 9)) {
-            startIndex += (lookAheadBuffer.get(position) - '0');
-            position++;
-        }
-        if ((lookAheadBuffer.get(position)) != ',') {
-            return null;
-        }
-        position++;
-        while ((0 <= (lookAheadBuffer.get(position) - '0')) && ((lookAheadBuffer.get(position) - '0') <= 9)) {
-            length += ((char) (lookAheadBuffer.get(position) & 0xFF) - '0');
-            position++;
-        }
-        if ((lookAheadBuffer.get(position) != ',') || (lookAheadBuffer.get(position + 2) != ')')) {
-            return null;
-        }
-        match = new Match(Integer.parseInt(startIndex), Integer.parseInt(length), lookAheadBuffer.get(position + 1));
-        return match;
     }
 
     public void encode(String inputFilename, String outputFilename) throws IOException {
@@ -97,8 +24,26 @@ public class Lz {
             Match match = findMatch();
             outputEncodedChars(writer, match);
             moveLookAheadBuffer(reader, match.getLength() + 1);
-            moveWindow(window);
+            limitWindow(window);
         }
+
+        writer.close();
+        reader.close();
+    }
+
+    public void decode(String inputFilename, String outputFilename) throws IOException {
+        FileInputStream reader = new FileInputStream(inputFilename);
+        FileOutputStream writer = new FileOutputStream(outputFilename);
+
+        do {
+            Match match = TokenUtil.readToken(reader);
+            if (match == null) {
+                break;
+            }
+            outputDecodedChars(writer, match, decodeWindow);
+            limitWindow(decodeWindow);
+        }
+        while (true);
 
         writer.close();
         reader.close();
@@ -108,12 +53,11 @@ public class Lz {
     private Match findMatch() {
         int tokenOffset = 0;
         int tokenLength = 0;
-        byte tokenNewChar = 0;
-
-        byte chToMatch = lookAheadBuffer.get(0);
+        byte tokenNewChar = lookAheadBuffer.get(0);
 
         if (!window.isEmpty()) {
             for (int i = window.size() - 1; i >= 0; i--) {
+                byte chToMatch = lookAheadBuffer.get(0);
                 if (window.get(i) == chToMatch) {
                     int length = 0;
                     int offset = window.size() - i;
@@ -127,12 +71,12 @@ public class Lz {
                         if (lookAheadPosition >= lookAheadBuffer.size() || windowPosition >= window.size()) {
                             break;
                         }
-                    } while (Objects.equals(lookAheadBuffer.get(lookAheadPosition), window.get(windowPosition)));
+                    } while (lookAheadBuffer.get(lookAheadPosition).equals(window.get(windowPosition)));
 
-                    if ((length > tokenLength)) {
-                        tokenLength = length;
+                    if (length > tokenLength) {
                         tokenOffset = offset;
                         if (lookAheadPosition < lookAheadBuffer.size()) {
+                            tokenLength = length;
                             tokenNewChar = lookAheadBuffer.get(lookAheadPosition);
                         } else {
                             tokenLength = length - 1;
@@ -150,29 +94,27 @@ public class Lz {
     // this method will be changed completely to output tokens in binary
     // the changes made here are only for compatibility with the old code
     private void outputEncodedChars(OutputStream writer, Match match) throws IOException {
-        writer.write((byte) '(');
-//      writer.write(match.getOffset() + "," + match.getLength() + "," + match.getNewChar() + ")");
-        writer.write((byte) ')');
+        writer.write(TokenUtil.encodeMatch(match));
     }
 
-    private void outputDecodedChars(OutputStream writer, Match match, ArrayList<Byte> source) throws IOException {
-        int start = source.size() - match.getOffset();
+    private void outputDecodedChars(OutputStream writer, Match match, List<Byte> array) throws IOException {
+        int start = array.size() - match.getOffset();
         int stop = start + match.getLength();
         for (int i = start; i < stop; i++) {
-            writer.write(source.get(i));
-            source.add(source.size(), source.get(i));
+            writer.write(array.get(i));
+            array.add(array.get(i));
         }
         writer.write(match.getNewChar());
-        source.add(source.size(), match.getNewChar());
+        array.add(match.getNewChar());
     }
 
     private void insertCharsInWindow(Match match) {
         int start = window.size() - match.getOffset();
-        int stop = window.size() - match.getOffset() + match.getLength();
+        int stop = start + match.getLength();
         for (int i = start; i < stop; i++) {
-            window.add(window.size(), window.get(i));
+            window.add(window.get(i));
         }
-        window.add(window.size(), match.getNewChar());
+        window.add(match.getNewChar());
     }
 
     private void fillLookAheadBuffer(InputStream inputStream) throws IOException {
@@ -186,7 +128,7 @@ public class Lz {
         }
     }
 
-    private void moveWindow(ArrayList array) {
+    private void limitWindow(List<Byte> array) {
         if (array.size() > windowSize) {
             int numberOfPositions = array.size() - windowSize;
 
