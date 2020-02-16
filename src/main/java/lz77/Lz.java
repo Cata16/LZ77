@@ -22,7 +22,7 @@ public class Lz {
         fillLookAheadBuffer(reader);
         while (!lookAheadBuffer.isEmpty()) {
             Match match = findMatch();
-            outputEncodedChars(writer, match);
+            TokenUtil.writeToken(writer, match);
             moveLookAheadBuffer(reader, match.getLength() + 1);
             limitWindow(window);
         }
@@ -91,12 +91,6 @@ public class Lz {
         return match;
     }
 
-    // this method will be changed completely to output tokens in binary
-    // the changes made here are only for compatibility with the old code
-    private void outputEncodedChars(OutputStream writer, Match match) throws IOException {
-        writer.write(TokenUtil.encodeMatch(match));
-    }
-
     private void outputDecodedChars(OutputStream writer, Match match, List<Byte> array) throws IOException {
         int start = array.size() - match.getOffset();
         int stop = start + match.getLength();
@@ -115,17 +109,6 @@ public class Lz {
             window.add(window.get(i));
         }
         window.add(match.getNewChar());
-    }
-
-    private void fillLookAheadBuffer(InputStream inputStream) throws IOException {
-        while (lookAheadBuffer.size() < lookAheadSize) {
-            int read = inputStream.read();
-            if (read != (-1)) {
-                lookAheadBuffer.add((byte) read);
-            } else {
-                break;
-            }
-        }
     }
 
     private void limitWindow(List<Byte> array) {
@@ -149,6 +132,17 @@ public class Lz {
             lookAheadBuffer.remove(lookAheadBuffer.size() - 1);
         }
         fillLookAheadBuffer(reader);
+    }
+
+    private void fillLookAheadBuffer(InputStream inputStream) throws IOException {
+        while (lookAheadBuffer.size() < lookAheadSize) {
+            int read = inputStream.read();
+            if (read != (-1)) {
+                lookAheadBuffer.add((byte) read);
+            } else {
+                break;
+            }
+        }
     }
 
     public String getSpaceSaved(String inputFile, String outputFile) {

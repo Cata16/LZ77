@@ -2,6 +2,7 @@ package lz77;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -48,6 +49,14 @@ public class TokenUtil {
             e.printStackTrace();
         }
         return null;
+    }
+
+    public static void writeToken(OutputStream writer, Match match) {
+        try {
+            writer.write(TokenUtil.encodeMatch(match));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     // this only serves as a test
