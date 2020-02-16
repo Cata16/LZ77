@@ -11,7 +11,6 @@ import java.io.IOException;
 
 public class Controller {
 
-    final Lz lz = new Lz();
     Alert alert;
 
     @FXML
@@ -45,7 +44,7 @@ public class Controller {
         }
         stateLabel.setText("Encoding ");
         try {
-
+            final Lz lz = new Lz();
             lz.encode(inputFileLabel.getText(), outputFileLabel.getText());
             stateLabel.setText("Done encoding" + "\n" + lz.getSpaceSaved(inputFileLabel.getText(), outputFileLabel.getText()));
 
@@ -65,7 +64,7 @@ public class Controller {
         }
         stateLabel.setText("Decoding ");
         try {
-
+            final Lz lz = new Lz();
             lz.decode(inputFileLabel.getText(), outputFileLabel.getText());
             stateLabel.setText("Done decoding");
 
