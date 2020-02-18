@@ -28,6 +28,7 @@ public class Controller {
         inputFile = fileChooser.showOpenDialog(null);
         inputFileLabel.setText(inputFile.getName());
 
+
     }
 
     public void uploadOutputFile() {
