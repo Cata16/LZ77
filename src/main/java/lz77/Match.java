@@ -10,9 +10,9 @@ package lz77;/*
 public class Match {
     private final int offset;
     private final int length;
-    private final byte newChar;
+    private final short newChar;
 
-    public Match(int startIndex, int length, byte newChar) {
+    public Match(int startIndex, int length, short newChar) {
         this.offset = startIndex;
         this.length = length;
         this.newChar = newChar;
@@ -26,7 +26,7 @@ public class Match {
         return length;
     }
 
-    public byte getNewChar() {
+    public short getNewChar() {
         return newChar;
     }
 
