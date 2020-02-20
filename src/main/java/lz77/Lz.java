@@ -22,10 +22,6 @@ public class Lz {
         windowSize=(int)Math.pow(2,nrBitsOffset)-1;
         while (!lookAheadBuffer.isEmpty()) {
             Match match = getMatchWitMaxLength(findMatches());
-            if(match.getLength()>=60){
-                System.out.println("encode"+match);
-            }
-
             TokenUtil.writeToken(writer, match);
             moveLookAheadBuffer(reader, match.getLength() + 1);
             insertCharsInWindow(match);
