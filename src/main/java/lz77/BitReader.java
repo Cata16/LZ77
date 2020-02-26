@@ -19,6 +19,7 @@ public class BitReader {
             if ((b = inputStream.read()) == -1) return -1;
             bufferReader = (byte) b;
 
+
         }
         numberOfReadBits--;
         return ((bufferReader >> (numberOfReadBits)) & 1);
@@ -26,7 +27,7 @@ public class BitReader {
     }
 
     public static ArrayList<Boolean> readNBits(int numberOfBits, InputStream inputStream) throws IOException {
-        ArrayList<Boolean> result = new ArrayList(numberOfBits);
+        ArrayList<Boolean> result = new ArrayList<>(numberOfBits);
         int readedBit;
         int bitPosition = 0;
         while (bitPosition < numberOfBits) {

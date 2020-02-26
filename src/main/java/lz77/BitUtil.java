@@ -5,7 +5,14 @@ import java.util.List;
 
 public class BitUtil {
     public static ArrayList<Boolean> convertIntToBits(int dataToConvert, int nrOfBits) {
+        if (dataToConvert < 0) {
+            return getBitArray(Math.abs(256 + dataToConvert), nrOfBits);
+        }
 
+        return getBitArray(Math.abs(dataToConvert), nrOfBits);
+    }
+
+    private static ArrayList<Boolean> getBitArray(int dataToConvert, int nrOfBits) {
         ArrayList<Boolean> result = new ArrayList<>(nrOfBits);
         while (Math.abs(dataToConvert) > 0) {
             result.add(0, (dataToConvert % 2) == 1);
@@ -18,7 +25,6 @@ public class BitUtil {
         }
         return result;
     }
-
     public static int convertBitsToInt(List<Boolean> bitArray) {
         int result = 0;
         int powerOf2 = 0;

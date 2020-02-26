@@ -9,7 +9,7 @@ public class MainClass {
         String outputFile1 = "C:\\Users\\Catalin\\Desktop\\outStream.txt";
         String outputFile2 = "C:\\Users\\Catalin\\Desktop\\outStream1.txt";
 
-        lz.encode(inputFile, outputFile1, 12, 6);
+        lz.encode(inputFile, outputFile1, 15, 6);
         lz.decode(outputFile1, outputFile2);
 
     }

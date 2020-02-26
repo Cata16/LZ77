@@ -20,6 +20,7 @@ public class BitWriter {
         }
         numberOfBitsWrite++;
         if (isBufferFull()) {
+
             outputStream.write(bufferWriter);
             numberOfBitsWrite = 0;
             bufferWriter = 0;

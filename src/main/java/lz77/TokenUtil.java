@@ -1,14 +1,15 @@
 package lz77;
 
 
-import java.io.*;
-
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 
 public class TokenUtil {
     public static int nrBitsOffset;
     public static int nrBitsLength;
-    public static final int nrBitsChar = 16;
+    public static final int nrBitsChar = 8;
 
     public  static void writeHeader(OutputStream outputStream,int nrBitsOffsetValue,int nrBitsLengthValue) throws IOException {
         nrBitsLength=nrBitsLengthValue;
@@ -41,7 +42,7 @@ public class TokenUtil {
         Match result;
         int offset = BitUtil.convertBitsToInt(data.subList(0, nrBitsOffset));
         int length = BitUtil.convertBitsToInt(data.subList(nrBitsOffset, nrBitsOffset + nrBitsLength));
-        short newChar = (short) BitUtil.convertBitsToInt(data.subList(nrBitsLength + nrBitsOffset, data.size()));
+        byte newChar = (byte) BitUtil.convertBitsToInt(data.subList(nrBitsLength + nrBitsOffset, data.size()));
         result = new Match(offset, length, newChar);
         return result;
     }

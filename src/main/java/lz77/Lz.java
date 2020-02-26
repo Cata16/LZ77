@@ -6,25 +6,22 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+
 public class Lz {
-    private final List<Short> lookAheadBuffer = new ArrayList<>();
-    private final List<Short> window = new ArrayList<>();
-    private  int windowSize;
+    private final List<Byte> lookAheadBuffer = new ArrayList<>();
+    private final List<Byte> window = new ArrayList<>();
+    private int windowSize;
 
-
-
-
-    public void encode(String inputFilename, String outputFilename,int nrBitsOffset,int nrBitsLength) throws IOException {
+    public void encode(String inputFilename, String outputFilename, int nrBitsOffset, int nrBitsLength) throws IOException {
         FileInputStream reader = new FileInputStream(inputFilename);
+
         FileOutputStream writer = new FileOutputStream(outputFilename);
         fillLookAheadBuffer(reader);
-        TokenUtil.writeHeader(writer,nrBitsOffset,nrBitsLength);
-        windowSize=(int)Math.pow(2,nrBitsOffset)-1;
+        TokenUtil.writeHeader(writer, nrBitsOffset, nrBitsLength);
+        windowSize = (int) Math.pow(2, nrBitsOffset) - 1;
         while (!lookAheadBuffer.isEmpty()) {
             Match match = getMatchWitMaxLength(findMatches());
-            if(match.getLength()>=60){
-                System.out.println("encode"+match);
-            }
+
 
             TokenUtil.writeToken(writer, match);
             moveLookAheadBuffer(reader, match.getLength() + 1);
@@ -58,7 +55,7 @@ public class Lz {
 
     private List<Match> findMatches() {
         ArrayList<Match> matches = new ArrayList<>();
-        short chToMatch = lookAheadBuffer.get(0);
+        byte chToMatch = lookAheadBuffer.get(0);
         if (!window.isEmpty()) {
             for (int i = window.size() - 1; i >= 0; i--) {
                 if (window.get(i) == chToMatch) {
@@ -77,7 +74,7 @@ public class Lz {
     private Match generateMatch(int matchPosition) {
         int tokenLength = 0;
         int tokenOffset = window.size() - matchPosition;
-        short tokenNewChar;
+        byte tokenNewChar;
         int lookAheadPosition = 0;
         do {
             tokenLength++;
@@ -103,16 +100,20 @@ public class Lz {
 
     private Match getMatchWitMaxLength(List<Match> matches) {
         int maxLength = 0;
-        int topvalueForLength=(int)Math.pow(2,TokenUtil.nrBitsLength)-1;
-        Match matchWitMaxLength=null;
+        int topvalueForLength = (int) Math.pow(2, TokenUtil.nrBitsLength) - 1;
+        Match matchWitMaxLength = null;
         for (Match match : matches) {
-            if ( (match.getLength() >=maxLength)&&(match.getLength()<topvalueForLength) ) {
+            if ((match.getLength() >= maxLength) && (match.getLength() < topvalueForLength)) {
                 maxLength = match.getLength();
                 matchWitMaxLength = match;
             }
         }
-        return matchWitMaxLength;
 
+
+        if (matchWitMaxLength == null) {
+            return new Match(0, 0, matches.get(0).getNewChar());
+        }
+        return matchWitMaxLength;
     }
 
     private void insertCharsInWindow(Match match) {
@@ -125,7 +126,7 @@ public class Lz {
     }
 
 
-    private void limitWindow(List<Short> array) {
+    private void limitWindow(List<Byte> array) {
         if (array.size() > windowSize) {
             int numberOfPositions = array.size() - windowSize;
 
@@ -139,7 +140,6 @@ public class Lz {
     }
 
     private void outputDecodedChars(OutputStream writer, Match match) throws IOException {
-        System.out.println(match);
         int start = window.size() - match.getOffset();
         int stop = start + match.getLength();
         for (int i = start; i < stop; i++) {
@@ -164,7 +164,7 @@ public class Lz {
         while (lookAheadBuffer.size() < lookAheadSize) {
             int read = inputStream.read();
             if (read != (-1)) {
-                lookAheadBuffer.add((short) read);
+                lookAheadBuffer.add((byte) read);
             } else {
                 break;
             }
