@@ -8,7 +8,6 @@ import java.util.List;
 public class Lz {
     private final List<Byte> lookAheadBuffer = new ArrayList<>();
     private final List<Byte> window = new ArrayList<>();
-    private int lookAheadSize;
     private int nrBitsOffset;
     private int nrBitsLength;
     private int windowSize;
@@ -17,7 +16,6 @@ public class Lz {
         this.nrBitsOffset = nrBitsOffset;
         this.nrBitsLength = nrBitsLength;
         windowSize = (int) Math.pow(2, nrBitsOffset) - 1;
-        lookAheadSize = (int) Math.pow(2, nrBitsOffset) - 1;
     }
 
     public Lz() {
@@ -123,7 +121,7 @@ public class Lz {
             int index;
             if (numberOfBits > 0) {
                 index = steganographyUtil.readNBits(numberOfBits);
-                if (index != -1)//0100 0011 ; 0110 1100 ; 0110 0001 ;0111 0101 ;1111 1111
+                if (index != -1)
                     return matches.get(index);
             }
         }
@@ -131,11 +129,11 @@ public class Lz {
 
     }
 
-    private ArrayList<Match> findMatches(byte chToMatch) {
+    private ArrayList<Match> findMatches(byte byteToMatch) {
         ArrayList<Match> matches = new ArrayList<>();
         if (!window.isEmpty()) {
             for (int i = window.size() - 1; i >= 0; i--) {
-                if (window.get(i) == chToMatch) {
+                if (window.get(i) == byteToMatch) {
 
                     matches.add(generateMatch(i));
 
@@ -143,7 +141,7 @@ public class Lz {
             }
         }
         if (matches.isEmpty()) {
-            matches.add(new Match(0, 0, lookAheadBuffer.get(0)));
+            matches.add(new Match(0, 0, byteToMatch));
         }
         return matches;
     }
@@ -162,10 +160,6 @@ public class Lz {
                 break;
             }
         } while (lookAheadBuffer.get(lookAheadPosition).equals(window.get(matchPosition)));
-
-        if (lookAheadBuffer.size() > 0) {
-
-
             if (lookAheadPosition < lookAheadBuffer.size()) {
 
                 tokenNewChar = lookAheadBuffer.get(lookAheadPosition);
@@ -175,9 +169,7 @@ public class Lz {
                 tokenLength = tokenLength - 1;
                 tokenNewChar = lookAheadBuffer.get(lookAheadPosition - 1);
             }
-        } else {
-            tokenNewChar = window.get(tokenOffset + tokenLength);
-        }
+
         return new Match(tokenOffset, tokenLength, tokenNewChar);
     }
 
@@ -191,7 +183,6 @@ public class Lz {
                 matchWitMaxLength = match;
             }
         }
-
 
         if (matchWitMaxLength == null) {
             return new Match(0, 0, matches.get(0).getNewChar());
@@ -301,7 +292,7 @@ public class Lz {
     public void fillLookAheadBuffer(BitReader bitReader) throws IOException {
         Match match;
 
-        while (lookAheadBuffer.size() < lookAheadSize) {
+        while (lookAheadBuffer.size() < windowSize) {
             match = TokenUtil.readToken(bitReader);
             if (match == null) break;
             if (match.getOffset() == 0) {
@@ -317,15 +308,13 @@ public class Lz {
         int start = lookAheadBuffer.size() - match.getOffset();
         int stop = start + match.getLength();
         for (int i = start; i < stop; i++) {
-
             lookAheadBuffer.add(lookAheadBuffer.get(i));
-
         }
         lookAheadBuffer.add(match.getNewChar());
     }
 
     private void fillLookAheadBuffer(InputStream inputStream) throws IOException {
-        while (lookAheadBuffer.size() < lookAheadSize) {
+        while (lookAheadBuffer.size() < windowSize) {
             int read = inputStream.read();
             if (read != (-1)) {
                 lookAheadBuffer.add((byte) read);

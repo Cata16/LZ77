@@ -9,10 +9,12 @@ public class SteganographyUtil {
     private int bufferIndex = 0;
 
 
+
     public SteganographyUtil(byte[] message) {
         insertBytesInMessage(message);
         appendEndChar();
-        bufferIndex = 8;
+        bufferIndex = 0;
+
 
     }
 
@@ -20,28 +22,23 @@ public class SteganographyUtil {
 
     }
 
-    private boolean isBufferFull() {
-        return bufferIndex == 8;
-    }
+
 
     public boolean isMessageEmpty() {
-        return (0 == message.size()) && isBufferFull();
+        return (0 == message.size()) && isBufferEmpty();
     }
 
     public int readBit() {
         int bit = -1;
-        if (isBufferFull()) {
+        if (isBufferEmpty()) {
             if (isMessageEmpty()) return bit;
             byteBuffer = message.get(0);
-            System.out.println(byteBuffer);
             message.remove(0);
-            bufferIndex = 0;
+            bufferIndex = 7;
         }
-        bit = ((byteBuffer >> (7 - bufferIndex)) & 1);
-        bufferIndex++;
+        bit = ((byteBuffer >> (bufferIndex)) & 1);
+        bufferIndex--;
         return bit;
-
-
     }
 
     public int readNBits(int numberOfBits) {
@@ -60,17 +57,20 @@ public class SteganographyUtil {
         if (endOfMessage()) return;
         for (Boolean bit : bits) {
             if (bit) {
-                byteBuffer |= 1 << (7 - bufferIndex);
+                byteBuffer |= 1 << (bufferIndex);
             }
-            bufferIndex++;
-            if (isBufferFull()) {
-                System.out.println("write" + byteBuffer);
+            bufferIndex--;
+            if (isBufferEmpty()) {
                 message.add(byteBuffer);
                 byteBuffer = 0;
-                bufferIndex = 0;
+                bufferIndex = 7;
 
             }
         }
+    }
+
+    private boolean isBufferEmpty() {
+        return bufferIndex == -1;
     }
 
     public boolean endOfMessage() {
@@ -88,11 +88,6 @@ public class SteganographyUtil {
             message.add(b);
         }
     }
-
-    public int getMessageSize() {
-        return message.size();
-    }
-
     public String getMessage() {
         if (message.size() == 0) return "";
         StringBuilder messageAsString = new StringBuilder();
@@ -108,4 +103,10 @@ public class SteganographyUtil {
     }
 
 
+    public int getMessageSize() {
+        if (isMessageEmpty())
+            return 0;
+        System.out.println(message.size() + 1);
+        return message.size() + 1;
+    }
 }
