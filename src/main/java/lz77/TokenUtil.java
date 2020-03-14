@@ -2,7 +2,6 @@ package lz77;
 
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 
@@ -11,21 +10,23 @@ public class TokenUtil {
     public static int nrBitsLength;
     public static final int nrBitsChar = 8;
 
-    public  static void writeHeader(OutputStream outputStream,int nrBitsOffsetValue,int nrBitsLengthValue) throws IOException {
-        nrBitsLength=nrBitsLengthValue;
-        nrBitsOffset=nrBitsOffsetValue;
-        BitWriter.writerNBits(BitUtil.convertIntToBits(nrBitsOffset,4),outputStream);
-        BitWriter.writerNBits(BitUtil.convertIntToBits(nrBitsLength,3),outputStream);
+    public static void writeHeader(OutputStream outputStream, int nrBitsOffsetValue, int nrBitsLengthValue) throws IOException {
+        nrBitsLength = nrBitsLengthValue;
+        nrBitsOffset = nrBitsOffsetValue;
+        BitWriter.writerNBits(BitUtil.convertIntToBits(nrBitsOffset, 4), outputStream);
+        BitWriter.writerNBits(BitUtil.convertIntToBits(nrBitsLength, 3), outputStream);
 
     }
-    public static void readHeader(InputStream inputStream) throws IOException {
-        nrBitsOffset=BitUtil.convertBitsToInt(BitReader.readNBits(4,inputStream));
-        nrBitsLength=BitUtil.convertBitsToInt(BitReader.readNBits(3,inputStream));
-    }
-    public static Match readToken(InputStream inputStream) throws IOException {
 
+    public static void readHeader(BitReader bitReader) throws IOException {
+
+        nrBitsOffset = BitUtil.convertBitsToInt(bitReader.readNBits(4));
+        nrBitsLength = BitUtil.convertBitsToInt(bitReader.readNBits(3));
+    }
+
+    public static Match readToken(BitReader bitReader) throws IOException {
         ArrayList<Boolean> bitBuffer;
-        bitBuffer = BitReader.readNBits(nrBitsLength + nrBitsOffset + nrBitsChar, inputStream);
+        bitBuffer = bitReader.readNBits(nrBitsLength + nrBitsOffset + nrBitsChar);
         if (bitBuffer == null) {
             return null;
         }
@@ -35,6 +36,7 @@ public class TokenUtil {
     public static void writeToken(OutputStream writer, Match match) throws IOException {
 
         BitWriter.writerNBits(encodeMatch(match), writer);
+        System.out.println(match);
 
     }
 
@@ -44,6 +46,7 @@ public class TokenUtil {
         int length = BitUtil.convertBitsToInt(data.subList(nrBitsOffset, nrBitsOffset + nrBitsLength));
         byte newChar = (byte) BitUtil.convertBitsToInt(data.subList(nrBitsLength + nrBitsOffset, data.size()));
         result = new Match(offset, length, newChar);
+
         return result;
     }
 
@@ -52,6 +55,7 @@ public class TokenUtil {
         result.addAll(BitUtil.convertIntToBits(match.getOffset(), nrBitsOffset));
         result.addAll(BitUtil.convertIntToBits(match.getLength(), nrBitsLength));
         result.addAll((BitUtil.convertIntToBits(match.getNewChar(), nrBitsChar)));
+
         return result;
     }
 }

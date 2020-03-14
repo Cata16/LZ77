@@ -1,61 +1,138 @@
 package lz77;
 
-
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-
 public class Lz {
     private final List<Byte> lookAheadBuffer = new ArrayList<>();
     private final List<Byte> window = new ArrayList<>();
+    private int lookAheadSize;
+    private int nrBitsOffset;
+    private int nrBitsLength;
     private int windowSize;
 
-    public void encode(String inputFilename, String outputFilename, int nrBitsOffset, int nrBitsLength) throws IOException {
-        FileInputStream reader = new FileInputStream(inputFilename);
-
-        FileOutputStream writer = new FileOutputStream(outputFilename);
-        fillLookAheadBuffer(reader);
-        TokenUtil.writeHeader(writer, nrBitsOffset, nrBitsLength);
+    public Lz(int nrBitsOffset, int nrBitsLength) {
+        this.nrBitsOffset = nrBitsOffset;
+        this.nrBitsLength = nrBitsLength;
         windowSize = (int) Math.pow(2, nrBitsOffset) - 1;
+        lookAheadSize = (int) Math.pow(2, nrBitsOffset) - 1;
+    }
+
+    public Lz() {
+
+    }
+
+    public void encode(String inputFilename, String outputFilename) throws IOException {
+        FileInputStream reader = new FileInputStream(inputFilename);
+        FileOutputStream writer = new FileOutputStream(outputFilename);
+        Match match;
+
+        TokenUtil.writeHeader(writer, nrBitsOffset, nrBitsLength);
+        fillLookAheadBuffer(reader);
         while (!lookAheadBuffer.isEmpty()) {
-            Match match = getMatchWitMaxLength(findMatches());
-
-
+            ArrayList<Match> matches = findMatches(lookAheadBuffer.get(0));
+            match = getMatchWitMaxLength(matches);
             TokenUtil.writeToken(writer, match);
             moveLookAheadBuffer(reader, match.getLength() + 1);
-            insertCharsInWindow(match);
-            limitWindow(window);
+            moveWindow(match);
         }
         BitWriter.clearBufferWriter(writer);
         writer.close();
         reader.close();
     }
 
+
     public void decode(String inputFilename, String outputFilename) throws IOException {
         FileInputStream reader = new FileInputStream(inputFilename);
+        BitReader bitReader = new BitReader(reader);
         FileOutputStream writer = new FileOutputStream(outputFilename);
-        TokenUtil.readHeader(reader);
-        windowSize=(int)Math.pow(2,TokenUtil.nrBitsOffset)-1;
+        Match match;
+        TokenUtil.readHeader(bitReader);
+        windowSize = (int) Math.pow(2, TokenUtil.nrBitsOffset) - 1;
         do {
-            Match match = TokenUtil.readToken(reader);
-            if (match == null) {
-                break;
-            }
-            outputDecodedChars(writer, match);
-            insertCharsInWindow(match);
-            limitWindow(window);
+            match = TokenUtil.readToken(bitReader);
+            if (match == null) break;
+            outputDecodedBytes(writer, match);
+            moveWindow(match);
         }
         while (true);
-
         writer.close();
         reader.close();
     }
 
-    private List<Match> findMatches() {
+    public int hideMessage(String inputFilename, String outputFilename, String message) throws IOException {
+        FileInputStream reader = new FileInputStream(inputFilename);
+        FileOutputStream writer = new FileOutputStream(outputFilename);
+        SteganographyUtil steganographyUtil = new SteganographyUtil(message.getBytes());
+        Match match;
+        window.clear();
+        lookAheadBuffer.clear();
+        fillLookAheadBuffer(reader);
+        TokenUtil.writeHeader(writer, nrBitsOffset, nrBitsLength);
+        while (!lookAheadBuffer.isEmpty()) {
+            ArrayList<Match> matches = findMatches(lookAheadBuffer.get(0));
+            match = encodeMessage(matches, steganographyUtil);
+            TokenUtil.writeToken(writer, match);
+            moveLookAheadBuffer(reader, match.getLength() + 1);
+            moveWindow(match);
+
+        }
+        BitWriter.clearBufferWriter(writer);
+        writer.close();
+        reader.close();
+        return steganographyUtil.getMessageSize();
+    }
+
+    public String getHiddenMessage(String inputFilename, String outputFilename) throws IOException {
+        FileOutputStream writer = new FileOutputStream(outputFilename);
+        SteganographyUtil steganographyUtil = new SteganographyUtil();
+
+        BitReader matchReader = new BitReader(new FileInputStream(inputFilename));
+        TokenUtil.readHeader(matchReader);
+
+        BitReader matchsReader = new BitReader(new FileInputStream(inputFilename));
+        TokenUtil.readHeader(matchsReader);
+
+        window.clear();
+        lookAheadBuffer.clear();
+        fillLookAheadBuffer(matchsReader);
+        Match match;
+        windowSize = (int) Math.pow(2, TokenUtil.nrBitsOffset) - 1;
+        do {
+            match = TokenUtil.readToken(matchReader);
+            if (match == null) break;
+            writeHiddenBitsToMessage(match, steganographyUtil);
+            outputDecodedBytes(writer, match);
+            moveLookAheadBuffer(matchsReader, match.getLength() + 1);
+            moveWindow(match);
+        }
+        while (true);
+
+        writer.close();
+        matchReader.close();
+        matchsReader.close();
+        return steganographyUtil.getMessage();
+
+    }
+
+    public Match encodeMessage(List<Match> matches, SteganographyUtil steganographyUtil) {
+        if (!steganographyUtil.isMessageEmpty()) {
+            int numberOfBits = (int) Math.floor((Math.log(matches.size()) / Math.log(2)));
+            int index;
+            if (numberOfBits > 0) {
+                index = steganographyUtil.readNBits(numberOfBits);
+                if (index != -1)//0100 0011 ; 0110 1100 ; 0110 0001 ;0111 0101 ;1111 1111
+                    return matches.get(index);
+            }
+        }
+        return getMatchWitMaxLength(matches);
+
+    }
+
+    private ArrayList<Match> findMatches(byte chToMatch) {
         ArrayList<Match> matches = new ArrayList<>();
-        byte chToMatch = lookAheadBuffer.get(0);
         if (!window.isEmpty()) {
             for (int i = window.size() - 1; i >= 0; i--) {
                 if (window.get(i) == chToMatch) {
@@ -86,14 +163,20 @@ public class Lz {
             }
         } while (lookAheadBuffer.get(lookAheadPosition).equals(window.get(matchPosition)));
 
+        if (lookAheadBuffer.size() > 0) {
 
-        if (lookAheadPosition < lookAheadBuffer.size()) {
 
-            tokenNewChar = lookAheadBuffer.get(lookAheadPosition);
+            if (lookAheadPosition < lookAheadBuffer.size()) {
+
+                tokenNewChar = lookAheadBuffer.get(lookAheadPosition);
+            } else {
+
+                // match on the last char
+                tokenLength = tokenLength - 1;
+                tokenNewChar = lookAheadBuffer.get(lookAheadPosition - 1);
+            }
         } else {
-            // match on the last char
-            tokenLength = tokenLength - 1;
-            tokenNewChar = lookAheadBuffer.get(lookAheadPosition - 1);
+            tokenNewChar = window.get(tokenOffset + tokenLength);
         }
         return new Match(tokenOffset, tokenLength, tokenNewChar);
     }
@@ -116,30 +199,62 @@ public class Lz {
         return matchWitMaxLength;
     }
 
-    private void insertCharsInWindow(Match match) {
+    private void moveWindow(Match match) {
         int start = window.size() - match.getOffset();
         int stop = start + match.getLength();
         for (int i = start; i < stop; i++) {
             window.add(window.get(i));
         }
         window.add(match.getNewChar());
+        limitWindow();
+
     }
 
+    private void limitWindow() {
+        if (window.size() > windowSize) {
+            int numberOfPositions = window.size() - windowSize;
 
-    private void limitWindow(List<Byte> array) {
-        if (array.size() > windowSize) {
-            int numberOfPositions = array.size() - windowSize;
-
-            for (int i = 0; i < array.size() - numberOfPositions; i++) {
-                Collections.swap(array, i, i + numberOfPositions);
+            for (int i = 0; i < window.size() - numberOfPositions; i++) {
+                Collections.swap(window, i, i + numberOfPositions);
             }
             for (int i = 0; i < numberOfPositions; i++) {
-                array.remove(array.size() - 1);
+                window.remove(window.size() - 1);
             }
         }
     }
 
-    private void outputDecodedChars(OutputStream writer, Match match) throws IOException {
+    public int getNumberOfBitsForSteganography(List<Match> matches) {
+        return (int) Math.floor((Math.log(matches.size()) / Math.log(2)));
+    }
+
+    public ArrayList<Boolean> getHiddenBits(Match matchFound, List<Match> matches) {
+        int numberOfBits;
+        int hiddenValue = 0;
+        numberOfBits = getNumberOfBitsForSteganography(matches);
+        for (Match match : matches) {
+            if (matchFound.equals(match)) {
+                hiddenValue = matches.indexOf(match);
+            }
+        }
+        return BitUtil.convertIntToBits(hiddenValue, numberOfBits);
+
+
+    }
+
+    private void writeHiddenBitsToMessage(Match matchFound, SteganographyUtil steganographyUtil) {
+        byte byteToMatch;
+        int tokenToMatchPosition = window.size() - matchFound.getOffset();
+        if (matchFound.getOffset() != 0) {
+            byteToMatch = window.get(tokenToMatchPosition);
+            ArrayList<Match> matches = findMatches(byteToMatch);
+            if (matches.size() > 1) {
+                steganographyUtil.writeBitsToMessage(getHiddenBits(matchFound, matches));
+            }
+
+        }
+    }
+
+    private void outputDecodedBytes(OutputStream writer, Match match) throws IOException {
         int start = window.size() - match.getOffset();
         int stop = start + match.getLength();
         for (int i = start; i < stop; i++) {
@@ -159,8 +274,57 @@ public class Lz {
         fillLookAheadBuffer(reader);
     }
 
+    private void moveLookAheadBuffer(BitReader bitReader, int numberOfPositions) throws IOException {
+        insertMatchInLookAhead(bitReader);
+        for (int i = 0; i < lookAheadBuffer.size() - numberOfPositions; i++) {
+            Collections.swap(lookAheadBuffer, i, i + numberOfPositions);
+        }
+        for (int i = 0; i < numberOfPositions; i++) {
+            lookAheadBuffer.remove(lookAheadBuffer.size() - 1);
+        }
+
+    }
+
+    private void insertMatchInLookAhead(BitReader bitReader) throws IOException {
+
+        Match match = TokenUtil.readToken(bitReader);
+        if (match == null) return;
+        if (match.getOffset() == 0) {
+            lookAheadBuffer.add(lookAheadBuffer.size(), match.getNewChar());
+        } else {
+            insertBytesInLookAheadBuffer(match);
+        }
+
+
+    }
+
+    public void fillLookAheadBuffer(BitReader bitReader) throws IOException {
+        Match match;
+
+        while (lookAheadBuffer.size() < lookAheadSize) {
+            match = TokenUtil.readToken(bitReader);
+            if (match == null) break;
+            if (match.getOffset() == 0) {
+                lookAheadBuffer.add(lookAheadBuffer.size(), match.getNewChar());
+            } else {
+                insertBytesInLookAheadBuffer(match);
+            }
+
+        }
+    }
+
+    private void insertBytesInLookAheadBuffer(Match match) {
+        int start = lookAheadBuffer.size() - match.getOffset();
+        int stop = start + match.getLength();
+        for (int i = start; i < stop; i++) {
+
+            lookAheadBuffer.add(lookAheadBuffer.get(i));
+
+        }
+        lookAheadBuffer.add(match.getNewChar());
+    }
+
     private void fillLookAheadBuffer(InputStream inputStream) throws IOException {
-        int lookAheadSize = 16000;
         while (lookAheadBuffer.size() < lookAheadSize) {
             int read = inputStream.read();
             if (read != (-1)) {
@@ -170,6 +334,5 @@ public class Lz {
             }
         }
     }
-
 
 }

@@ -37,6 +37,7 @@ public class BitWriter {
         for (int i = 0; i < 7; i++) {
             writeBit(false ,outputStream);
         }
+        numberOfBitsWrite = 8;
     }
 
 

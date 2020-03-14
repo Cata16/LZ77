@@ -5,14 +5,23 @@ import java.io.InputStream;
 import java.util.ArrayList;
 
 public class BitReader {
-    private static byte bufferReader;
-    private static int numberOfReadBits;
+    private final InputStream inputStream;
+    private byte bufferReader;
+    private int numberOfReadBits;
 
-    private static boolean isBufferEmpty() {
+    public BitReader(InputStream inputStream) {
+        this.inputStream = inputStream;
+    }
+
+    private boolean isBufferEmpty() {
         return numberOfReadBits == 0;
     }
 
-    public static int readBit(InputStream inputStream) throws IOException {
+    public void close() throws IOException {
+        this.inputStream.close();
+    }
+
+    public int readBit() throws IOException {
         int b;
         if (isBufferEmpty()) {
             numberOfReadBits = 8;
@@ -26,12 +35,12 @@ public class BitReader {
 
     }
 
-    public static ArrayList<Boolean> readNBits(int numberOfBits, InputStream inputStream) throws IOException {
+    public ArrayList<Boolean> readNBits(int numberOfBits) throws IOException {
         ArrayList<Boolean> result = new ArrayList<>(numberOfBits);
         int readedBit;
         int bitPosition = 0;
         while (bitPosition < numberOfBits) {
-            readedBit = readBit(inputStream);
+            readedBit = readBit();
             if (readedBit == -1) return null;
             result.add(bitPosition, (readedBit == 1));
             bitPosition++;
@@ -39,6 +48,5 @@ public class BitReader {
         return result;
 
     }
-
 
 }

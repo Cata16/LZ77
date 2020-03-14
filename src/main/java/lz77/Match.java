@@ -18,6 +18,7 @@ public class Match {
         this.newChar = newChar;
     }
 
+
     public int getOffset() {
         return offset;
     }
@@ -37,5 +38,19 @@ public class Match {
                 ", length=" + length +
                 ", newChar=" + newChar +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Match)) {
+            return false;
+        }
+        Match matchToCompare = (Match) o;
+        return (this.getNewChar() == matchToCompare.getNewChar()) &&
+                (this.getLength() == matchToCompare.getLength()) &&
+                (this.getOffset() == matchToCompare.getOffset());
     }
 }
